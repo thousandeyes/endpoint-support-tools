@@ -2,7 +2,7 @@
 
 #### [`Install-EndpointAgentTcpNetworkTests.ps1`](./scripts/Install-EndpointAgentTcpNetworkTests.ps1)
 
-PowerShell script to install, re-install or upgrade ThousandEyes Endpoint Agent with support for TCP network tests. The script can be invoked with a command line the following:
+PowerShell script to install, re-install or upgrade ThousandEyes Endpoint Agent with support for TCP network tests. The script can be invoked with a command line like the following:
 
 ```
 powershell.exe -ExecutionPolicy Bypass -NoProfile ^
