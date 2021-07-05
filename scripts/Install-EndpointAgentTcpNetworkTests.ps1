@@ -11,14 +11,37 @@
         This script will install, re-install or upgrade ThousandEyes Endpoint Agent with support for TCP network
         tests.
 
-        On success, the script exits with a return code of 0. If msiexec.exe fails, the script returns the the
-        return code from msiexec.exe.
+        On success, the script exits with a return code of 0. If msiexec.exe fails, the script returns the return
+        code from msiexec.exe.
+
+        Unless otherwise specified, optional installer features such as the IE, Chrome and Edge browser extensions
+        are left in their current state. To forcibly add or remove these features, pass one or more of
+        -EnableIeExtension:<$true|$false>, -EnableChromeExtension:<$true|$false> or
+        -EnableEdgeExtension:<$true|$false> to this script.
 
     .PARAMETER InstallerFilePath
         Path to a ThousandEyes Endpoint Agent installer.
 
+    .PARAMETER EnableIeExtension
+        Enables support for collecting network metrics for whitelisted pages visited in Internet Explorer.
+
+    .PARAMETER EnableChromeExtension
+        Enables support for collecting network metrics for whitelisted pages visited in Google Chrome.
+
+    .PARAMETER EnableEdgeExtension
+        Enables support for collecting network metrics for whitelisted pages visited in Microsoft Edge.
+
     .EXAMPLE
         PS> .\Install-EndpointAgentTcpNetworkTests.ps1 -InstallerFilePath ".\Endpoint Agent for Acme Enterprises-x64-1.80.0.msi"
+
+        Ensures TCP network test support is enabled, and the IE, Chrome and Edge browser extension features are
+        left in their current state.
+
+    .EXAMPLE
+        PS> .\Install-EndpointAgentTcpNetworkTests.ps1 -InstallerFilePath ".\Endpoint Agent for Acme Enterprises-x64-1.80.0.msi" -EnableIeExtension:$false -EnableChromeExtension:$false -EnableEdgeExtension:$false
+
+        Ensures TCP network test support is enabled, but the IE, Chrome and Edge browser extension features are not
+        enabled.
 
     .NOTES
         This script must be run with administrator privileges.
@@ -26,7 +49,16 @@
 [CmdletBinding()]
 param (
     [Parameter(Mandatory = $true)]
-    [string]$InstallerFilePath
+    [string]$InstallerFilePath,
+
+    [Parameter()]
+    [switch]$EnableIeExtension,
+
+    [Parameter()]
+    [switch]$EnableChromeExtension,
+
+    [Parameter()]
+    [switch]$EnableEdgeExtension
 )
 process {
     Set-StrictMode -Version 3
@@ -161,11 +193,12 @@ process {
     # Assume package name is the same as the input file until we determine otherwise.
     $packageName = ([IO.FileInfo]$InstallerFilePath).BaseName
 
+    # Default feature states for optional features
     $proposedFeatures = [ordered]@{
         "TcpNetworkTestsSupport" = $false
-        "IeExtension"            = $true
-        "ChromeExtension"        = $true
-        "EdgeExtension"          = $true
+        "IeExtension"            = $false
+        "ChromeExtension"        = $false
+        "EdgeExtension"          = $false
     }
 
     if ($relatedProducts.Count -eq 0) {
@@ -205,8 +238,19 @@ process {
         }
     }
 
-    # Enable TCP Network Tests feature if not already selected.
+    # Always enable TCP Network Tests feature.
     $proposedFeatures["TcpNetworkTestsSupport"] = $true
+
+    # If specified on the command line, adjust browser extension features. Otherwise leave them alone.
+    if ($PSCmdlet.MyInvocation.BoundParameters.ContainsKey("EnableIeExtension")) {
+        $proposedFeatures["IeExtension"] = $EnableIeExtension
+    }
+    if ($PSCmdlet.MyInvocation.BoundParameters.ContainsKey("EnableChromeExtension")) {
+        $proposedFeatures["ChromeExtension"] = $EnableChromeExtension
+    }
+    if ($PSCmdlet.MyInvocation.BoundParameters.ContainsKey("EnableEdgeExtension")) {
+        $proposedFeatures["EdgeExtension"] = $EnableEdgeExtension
+    }
 
     $userTempDir = [IO.Path]::GetTempPath()
 
@@ -220,9 +264,12 @@ process {
         Copy-Item $InstallerFilePath -Destination $installerTempPath
 
         $enabledFeatures = @()
+        $disabledFeatures = @()
         foreach ($featureName in $proposedFeatures.Keys) {
             if ($proposedFeatures[$featureName]) {
                 $enabledFeatures += $featureName
+            } else {
+                $disabledFeatures += $featureName
             }
         }
 
@@ -232,6 +279,7 @@ process {
             "/i",
             "`"$installerTempPath`"",
             "ADDLOCAL=`"$($enabledFeatures -Join ",")`"",
+            "REMOVE=`"$($disabledFeatures -Join ",")`"",
             "/qn",
             "/quiet"
             "/norestart",
