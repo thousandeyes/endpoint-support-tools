@@ -1,14 +1,14 @@
-# Copyright (c) 2021 ThousandEyes, Inc.
+# Copyright (c) 2021-2023 ThousandEyes, Inc.
 
 #Requires -Version 5.1
 #Requires -RunAsAdministrator
 
 <#
     .SYNOPSIS
-        Installs ThousandEyes Endpoint Agent with support for TCP network tests.
+        Installs ThousandEyes Endpoint Agent with support for extended network tests.
 
     .DESCRIPTION
-        This script will install, re-install or upgrade ThousandEyes Endpoint Agent with support for TCP network
+        This script will install, re-install or upgrade ThousandEyes Endpoint Agent with support for extended network
         tests.
 
         On success, the script exits with a return code of 0. If msiexec.exe fails, the script returns the return
@@ -32,15 +32,15 @@
         Enables support for collecting network metrics for whitelisted pages visited in Microsoft Edge.
 
     .EXAMPLE
-        PS> .\Install-EndpointAgentTcpNetworkTests.ps1 -InstallerFilePath ".\Endpoint Agent for Acme Enterprises-x64-1.80.0.msi"
+        PS> .\Install-EndpointAgentExtendedNetworkTests.ps1 -InstallerFilePath ".\Endpoint Agent for Acme Enterprises-x64-1.80.0.msi"
 
-        Ensures TCP network test support is enabled, and the IE, Chrome and Edge browser extension features are
+        Ensures extended network test support is enabled, and the IE, Chrome and Edge browser extension features are
         left in their current state.
 
     .EXAMPLE
-        PS> .\Install-EndpointAgentTcpNetworkTests.ps1 -InstallerFilePath ".\Endpoint Agent for Acme Enterprises-x64-1.80.0.msi" -EnableIeExtension:$false -EnableChromeExtension:$false -EnableEdgeExtension:$false
+        PS> .\Install-EndpointAgentExtendedNetworkTests.ps1 -InstallerFilePath ".\Endpoint Agent for Acme Enterprises-x64-1.80.0.msi" -EnableIeExtension:$false -EnableChromeExtension:$false -EnableEdgeExtension:$false
 
-        Ensures TCP network test support is enabled, but the IE, Chrome and Edge browser extension features are not
+        Ensures extended network test support is enabled, but the IE, Chrome and Edge browser extension features are not
         enabled.
 
     .NOTES
@@ -195,10 +195,10 @@ process {
 
     # Default feature states for optional features
     $proposedFeatures = [ordered]@{
-        "TcpNetworkTestsSupport" = $false
-        "IeExtension"            = $false
-        "ChromeExtension"        = $false
-        "EdgeExtension"          = $false
+        "ExtendedNetworkTestsSupport"   = $true
+        "IeExtension"                   = $false
+        "ChromeExtension"               = $false
+        "EdgeExtension"                 = $false
     }
 
     if ($relatedProducts.Count -eq 0) {
@@ -238,8 +238,8 @@ process {
         }
     }
 
-    # Always enable TCP Network Tests feature.
-    $proposedFeatures["TcpNetworkTestsSupport"] = $true
+    # Always enable Extended Network Tests feature.
+    $proposedFeatures["ExtendedNetworkTestsSupport"] = $true
 
     # If specified on the command line, adjust browser extension features. Otherwise leave them alone.
     if ($PSCmdlet.MyInvocation.BoundParameters.ContainsKey("EnableIeExtension")) {
